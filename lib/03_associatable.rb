@@ -1,5 +1,6 @@
 require_relative '02_searchable'
 require 'active_support/inflector'
+require 'byebug'
 
 # Phase IIIa
 class AssocOptions
@@ -15,41 +16,42 @@ class AssocOptions
 
   def table_name
     model_class.table_name
-    # ...
   end
 end
 
 class BelongsToOptions < AssocOptions
-  def initialize(name, options = {})
-    defaults = {
-      foreign_key: "#{name}_id".to_sym,
-      class_name: name.to_s.camelcase,
-      primary_key: :id,
-    }
-    options = defaults.merge(options)
-    options.each do |k, v|
-      k = "#{k.to_s}="
-      self.send(k, v)
-    end
+  attr_reader :name, :options
 
+  def initialize(name, options = {})
+    @name = name
+    defaults = {
+      class_name: "#{name.to_s.camelcase}",
+      foreign_key: "#{name}_id".to_sym,
+      primary_key: :id
+    }
+
+    @options = defaults.merge(options)
+
+    @options.each do |key, value|
+      self.send("#{key}=", value)
+    end
   end
 end
 
-
-
 class HasManyOptions < AssocOptions
   def initialize(name, self_class_name, options = {})
+    @name = name
     defaults = {
-      foreign_key: "#{self_class_name.to_s.downcase}_id".to_sym,
-      class_name: name.to_s.singularize.camelcase,
-      primary_key: :id,
+      class_name: "#{name.to_s.singularize.camelcase}",
+      foreign_key: "#{self_class_name.to_s.underscore}_id".to_sym,
+      primary_key: :id
     }
-    options = defaults.merge(options)
-    options.each do |k, v|
-      k = "@#{k}".to_sym
-      self.instance_variable_set(k, v)
+
+    @options = defaults.merge(options)
+
+    @options.each do |key, value|
+      self.send("#{key}=", value)
     end
-    # ...
   end
 end
 
@@ -57,31 +59,33 @@ module Associatable
   # Phase IIIb
   def belongs_to(name, options = {})
     options = BelongsToOptions.new(name, options)
-    define_method(name) do
-      foreign_key = options.send(:foreign_key)
-      foreign_key = self.send(foreign_key)
-      result = options.model_class.where({id: foreign_key})
-      result.first
+    assoc_options[name] = options
 
+    define_method(name) do
+      foreign_key_name = options.send(:foreign_key)
+      foreign_key = send(foreign_key_name)
+      class_name = options.model_class
+
+      results = class_name.where({ id: foreign_key })
+
+      results.first
     end
   end
 
   def has_many(name, options = {})
     options = HasManyOptions.new(name, self, options)
-    # byebug
+
     define_method(name) do
+      class_name = options.model_class
       foreign_key = options.send(:foreign_key)
-      result = options.model_class.where({foreign_key => self.id})
+
+      class_name.where({ foreign_key => self.id })
     end
   end
-  #
-  # has_many :humans
-  #   class_name: "Human",
-  #   foreign_key: :human_id,
-  #   primary_key: :id
 
   def assoc_options
     # Wait to implement this in Phase IVa. Modify `belongs_to`, too.
+    @assoc_options_hash ||= {}
   end
 end
 
