@@ -13,17 +13,3 @@ class AttrAccessorObject
     end
   end
 end
-
-#
-# my_attr_accessor :name
-# :@name
-#
-#
-# class Cat
-#   def name
-#     @name
-#   end
-#
-#   def name=(other_name)
-#     @name = other_name
-#   end

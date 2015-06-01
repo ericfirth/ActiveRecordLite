@@ -1,10 +1,9 @@
-require_relative 'db_connection'
-require 'active_support/inflector'
-require 'byebug'
-# NB: the attr_accessor we wrote in phase 0 is NOT used in the rest
-# of this project. It was only a warm up.
+require "active_support/inflector"
 
 class SQLObject
+  extend Searchable
+  extend Associatable
+
   def self.columns
     all = DBConnection.execute2(<<-SQL)
     SELECT
@@ -28,9 +27,6 @@ class SQLObject
       end
     end
   end
-  # def id=(id)
-  #attributes[:id]=id
-  #end
 
   def self.table_name=(table_name)
     @table_name = table_name
@@ -72,7 +68,6 @@ class SQLObject
     return nil if result.empty?
     self.new(result.first)
 
-    # ...
   end
 
   def initialize(params = {})
@@ -91,9 +86,6 @@ class SQLObject
   end
 
   def attribute_values
-    # [].tap do |values|
-    #   @attributes.each_value {|value| values << value}
-    # end
     [].tap do |values|
       self.class.columns.map do |attr|
         values << self.send(attr)
