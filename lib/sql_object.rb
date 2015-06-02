@@ -109,7 +109,6 @@ class SQLObject
   def update
     set_str = self.class.columns[1..-1].map{|value| "#{value} = ?"}.join(', ')
     values = attribute_values.rotate
-    # byebug
 
     DBConnection.execute(<<-SQL,*values)
     UPDATE
